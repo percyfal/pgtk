@@ -1,0 +1,40 @@
+name: Test pgtk
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Test pgtk main commands
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: checkout source code
+        uses: actions/checkout@v2
+
+      - name: cache-conda
+        uses: actions/cache@v2
+        env:
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:  ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('requirements/test-environment.yml') }}-${{ hashFiles('requirements/environment.yaml') }}
+
+      - name: install miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          channels: conda-forge,bioconda,default
+          channel-priority: true
+          environment-file: requirements/test-environment.yaml
+          use-only-tar-bz2: true
+
+      - if: steps.cache-conda.outputs.cache-hit == 'false'
+        name: install dependencies
+        run: |
+          conda install -y -c conda-forge mamba
+          mamba env update -f requirements/environment.yaml
+
+      - name: run tests
+        shell: bash -l {0}
+        run: |
+          pytest -v -s
