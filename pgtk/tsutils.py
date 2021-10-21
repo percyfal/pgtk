@@ -30,6 +30,7 @@ def run_update_individual_metadata(args):
         # Assume metadata keys are in order
         elif not bool(md):
             md = metadata.iloc[i].to_dict()
+            md[key] = i
         else:
             x = metadata.iloc[i].to_dict()
             md.update(**x)
