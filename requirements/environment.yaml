@@ -6,3 +6,4 @@ dependencies:
   - tskit
   - msprime
   - pandas
+  - bokeh
