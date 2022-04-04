@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import pytest
-import pandas as pd
-from pgtk import tsutils
 import json
+
+import pandas as pd
+import pytest
+from pgtk.tskit import table
 
 
 @pytest.fixture
@@ -21,15 +21,15 @@ def tablerow(ts_ancestry_fixture):
 
 
 def test_get_metadata(tablerow):
-    assert tsutils.get_metadata(tablerow) == {}
+    assert table.get_metadata(tablerow) == {}
 
 
 def test_update(tablerow, metadata_ind):
-    md = tsutils.update_metadata("id", 0, dict(), metadata_ind)
+    md = table.update_metadata("id", 0, dict(), metadata_ind)
     assert md == {"id": 0, "foo": "bar0"}
 
 
 def test_update_tablerow(ts_ancestry_fixture, metadata_ind):
-    ts = tsutils.update_tablerow_metadata(ts_ancestry_fixture, metadata_ind)
+    ts = table.update_tablerow_metadata(ts_ancestry_fixture, metadata_ind)
     md = list(ts.individuals())[0].metadata.decode()
     assert json.loads(md) == {"id": 0, "foo": "bar0"}
