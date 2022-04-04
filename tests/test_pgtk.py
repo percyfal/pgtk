@@ -1,11 +1,6 @@
 #!/usr/bin/env python
-
 """Tests for `pgtk` package."""
-
 import pytest
-
-
-from pgtk import pgtk
 
 
 @pytest.fixture

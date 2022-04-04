@@ -1,14 +1,26 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import json
-import tskit
+
 import pandas as pd
+import tskit
+
+
+def run_update_table_metadata(args):
+    from pgtk import tsutils
+
+    ts = tskit.load(args.tree_sequence)
+    key = args.merge_key
+    metadata = pd.read_table(args.metadata)
+    metadata.set_index([key], inplace=True)
+    tsout = tsutils.update_tablerow_metadata(
+        ts, metadata=metadata, tablename=args.table_name, key=key
+    )
+    tsout.dump(args.outfile)
 
 
 def get_metadata(tablerow):
     md_string = tablerow.metadata.decode()
     if md_string:
-        md = json.loads(x.metadata.decode())
+        md = json.loads(tablerow.metadata.decode())
     else:
         md = {}
     return md
