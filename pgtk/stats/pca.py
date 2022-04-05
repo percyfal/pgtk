@@ -27,7 +27,7 @@ def run_pca(args):
             if args.plot_ld:
                 plot_ld(
                     gn,
-                    f"{reg} ({vcf})",
+                    f"{reg}, {gn.shape[0]} sites",
                     n=args.plot_ld_variants,
                     filename=f"{vcf}.{reg}.ld.png",
                 )
@@ -41,7 +41,7 @@ def run_pca(args):
             if args.plot_ld:
                 plot_ld(
                     gnu,
-                    f"{reg} pruned ({vcf})",
+                    f"{reg} pruned, {gnu.shape[0]} sites",
                     n=args.plot_ld_variants,
                     filename=f"{vcf}.{reg}.ld.pruned.png",
                 )

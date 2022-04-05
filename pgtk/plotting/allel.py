@@ -11,3 +11,5 @@ def plot_ld(gn, title, n=None, filename=None):
     ax.set_title(title)
     if filename is not None:
         plt.savefig(filename)
+        plt.cla()
+        plt.clf()
