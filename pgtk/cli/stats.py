@@ -10,8 +10,8 @@ def add_pca_arguments(parser):
         type=int,
         default=500,
         help=(
-            "the window size, measured in number of snps, ",
-            "to use for identifying ld blocks",
+            "the window size, measured in number of snps, "
+            "to use for identifying ld blocks"
         ),
     )
     parser.add_argument("--window-step", type=int, default=250, help="window step size")
