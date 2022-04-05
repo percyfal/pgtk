@@ -25,7 +25,12 @@ def run_pca(args):
                     gnr = gn.take(vidx, axis=0)
                     gn = gnr
             if args.plot_ld:
-                plot_ld(gn, f"{vcf}", n=args.plot_ld_variants, filename=f"{vcf}.ld.png")
+                plot_ld(
+                    gn,
+                    f"{reg} ({vcf})",
+                    n=args.plot_ld_variants,
+                    filename=f"{vcf}.{reg}.ld.png",
+                )
             gnu = ld_prune(
                 gn,
                 size=args.window_size,
@@ -36,9 +41,9 @@ def run_pca(args):
             if args.plot_ld:
                 plot_ld(
                     gnu,
-                    f"{vcf}, pruned",
+                    f"{reg} pruned ({vcf})",
                     n=args.plot_ld_variants,
-                    filename=f"{vcf}.ld.pruned.png",
+                    filename=f"{vcf}.{reg}.ld.pruned.png",
                 )
             gnulist.append(gnu)
     if len(gnulist) > 0:
