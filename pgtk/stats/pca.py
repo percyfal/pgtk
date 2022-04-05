@@ -1,8 +1,10 @@
+import multiprocessing
 import pickle
+from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import pandas as pd
-from pgtk.plotting.allel import plot_ld
+from pgtk.plotting.allel import plot_ld as make_plot_ld
 
 try:
     import allel
@@ -11,42 +13,28 @@ except ImportError:
 
 
 def run_pca(args):
-    gnulist = []
-    for vcf in args.vcfs:
-        print(f"Processing file {vcf}\n")
-        regions = allel.read_vcf(vcf)["variants/CHROM"]
-        for reg in np.unique(regions):
-            print(f"Reading region {reg}\n")
-            gn = load_genotypes(vcf, reg)
-            if args.subsample is not None:
-                if args.subsample < gn.shape[0]:
-                    vidx = np.random.choice(gn.shape[0], args.subsample, replace=False)
-                    vidx.sort()
-                    gnr = gn.take(vidx, axis=0)
-                    gn = gnr
-            if args.plot_ld:
-                plot_ld(
-                    gn,
-                    f"{reg}, {gn.shape[0]} sites",
-                    n=args.plot_ld_variants,
-                    filename=f"{vcf}.{reg}.ld.png",
-                )
-            gnu = ld_prune(
-                gn,
-                size=args.window_size,
-                step=args.window_step,
-                threshold=args.threshold,
-                n_iter=args.iter,
-            )
-            if args.plot_ld:
-                plot_ld(
-                    gnu,
-                    f"{reg} pruned, {gnu.shape[0]} sites",
-                    n=args.plot_ld_variants,
-                    filename=f"{vcf}.{reg}.ld.pruned.png",
-                )
-            gnulist.append(gnu)
-    if len(gnulist) > 0:
+    kwargs = dict(
+        subsample=args.subsample,
+        plot_ld=args.plot_ld,
+        plot_ld_variants=args.plot_ld_variants,
+        no_ld_prune=args.no_ld_prune,
+        window_size=args.window_size,
+        window_step=args.window_step,
+        threshold=args.threshold,
+        n_iter=args.n_iter,
+        exclude=args.exclude,
+    )
+    fargs = ((vcf, *kwargs.values()) for vcf in args.vcfs)
+    if args.threads > 1 and multiprocessing.cpu_count() > 1:
+        pool = ThreadPool(args.threads)
+        gnulist = pool.starmap(process_vcf, fargs)
+        pool.close()
+        pool.terminate()
+    else:
+        gnulist = []
+        for vcf in args.vcfs:
+            gnulist.append(process_vcf(vcf, **kwargs))
+    if len(gnulist) > 1:
         genotype_data = gnulist[0].concatenate(gnulist[1:])
     else:
         genotype_data = gnulist[0]
@@ -62,6 +50,60 @@ def run_pca(args):
             df_coords.to_csv(fh, sep="\t", index=False)
     else:
         print(df_coords)
+
+
+def process_vcf(
+    vcf,
+    subsample=None,
+    plot_ld=False,
+    plot_ld_variants=1000,
+    no_ld_prune=False,
+    window_size=500,
+    window_step=250,
+    threshold=0.1,
+    n_iter=5,
+    exclude=None,
+):
+    print(f"Processing file {vcf}\n")
+    regions = allel.read_vcf(vcf, fields=["CHROM"])["variants/CHROM"]
+    samples = allel.read_vcf_headers(vcf).samples
+    if exclude is not None:
+        samples = [s for s in samples if s not in exclude]
+
+    for reg in np.unique(regions):
+        print(f"Reading region {reg}\n")
+        gn = load_genotypes(vcf, reg, samples=samples)
+        if subsample is not None:
+            if subsample < gn.shape[0]:
+                vidx = np.random.choice(gn.shape[0], subsample, replace=False)
+                vidx.sort()
+                gnr = gn.take(vidx, axis=0)
+                gn = gnr
+        if plot_ld:
+            make_plot_ld(
+                gn,
+                f"{reg}, {gn.shape[0]} sites",
+                n=plot_ld_variants,
+                filename=f"{vcf}.{reg}.ld.png",
+            )
+        if not no_ld_prune:
+            gnu = ld_prune(
+                gn,
+                size=window_size,
+                step=window_step,
+                threshold=threshold,
+                n_iter=n_iter,
+            )
+        else:
+            gnu = gn
+        if plot_ld:
+            make_plot_ld(
+                gnu,
+                f"{reg} pruned, {gnu.shape[0]} sites",
+                n=plot_ld_variants,
+                filename=f"{vcf}.{reg}.ld.pruned.png",
+            )
+    return gnu
 
 
 def ld_prune(gn, size, step, threshold=0.1, n_iter=1):
@@ -87,8 +129,8 @@ def ld_prune(gn, size, step, threshold=0.1, n_iter=1):
     return gn
 
 
-def load_genotypes(fn, region):
-    callset = allel.read_vcf(fn, region=region)
+def load_genotypes(fn, region, samples):
+    callset = allel.read_vcf(fn, region=region, samples=samples)
     g = allel.GenotypeChunkedArray(callset["calldata/GT"])
     ac = g.count_alleles()[:]
     flt = (ac.max_allele() == 1) & (ac[:, :2].min(axis=1) > 1)

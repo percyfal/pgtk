@@ -8,7 +8,10 @@ from pgtk.cli import add_tskit_subcommand
 
 
 def get_pgtk_parser():
-    top_parser = argparse.ArgumentParser(description="Command line interface for pgtk.")
+    top_parser = argparse.ArgumentParser(
+        description="Command line interface for pgtk.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     top_parser.add_argument(
         "-V", "--version", action="version", version=f"%(prog)s {pgtk.__version__}"
     )

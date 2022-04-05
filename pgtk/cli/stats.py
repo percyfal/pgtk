@@ -1,10 +1,19 @@
+import argparse
+
 from pgtk.cli.io import add_input_vcfs_argument
 from pgtk.cli.io import add_output_prefix_argument
 from pgtk.cli.log import add_debug_argument
+from pgtk.cli.log import add_threads_argument
 from pgtk.stats.pca import run_pca
 
 
 def add_pca_arguments(parser):
+    parser.add_argument(
+        "--no-ld-prune",
+        default=False,
+        help="don't prune variants prior to pca",
+        action="store_true",
+    )
     parser.add_argument(
         "--window-size",
         type=int,
@@ -22,7 +31,7 @@ def add_pca_arguments(parser):
         help="maximum value of r^2 to include variants",
     )
     parser.add_argument(
-        "--iter", type=int, default=5, help="number of pruning iterations"
+        "--n-iter", type=int, default=5, help="number of pruning iterations"
     )
     parser.add_argument(
         "--components", type=int, default=10, help="number of pca components"
@@ -50,6 +59,14 @@ def add_pca_arguments(parser):
         default=None,
         help="subsample raw input to this number of sites",
     )
+    parser.add_argument(
+        "--exclude",
+        "-e",
+        type=str,
+        nargs="*",
+        default=None,
+        help="list of samples to exclude",
+    )
 
 
 def add_stats_subcommand(subparsers):
@@ -67,9 +84,12 @@ def add_stats_subcommand(subparsers):
     on loadings and more.
 
     """
-    pca_parser = stats_subparsers.add_parser("pca", help=pca_help)
+    pca_parser = stats_subparsers.add_parser(
+        "pca", help=pca_help, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     add_input_vcfs_argument(pca_parser)
     add_pca_arguments(pca_parser)
     add_output_prefix_argument(pca_parser)
+    add_threads_argument(pca_parser)
     add_debug_argument(pca_parser)
     pca_parser.set_defaults(runner=run_pca)
