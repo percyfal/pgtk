@@ -2,10 +2,9 @@ import pickle
 
 import numpy as np
 import pandas as pd
+from pgtk.plotting.allel import plot_ld
 
 try:
-    # import scipy
-    # import h5py
     import allel
 except ImportError:
     raise
@@ -14,16 +13,38 @@ except ImportError:
 def run_pca(args):
     gnulist = []
     for vcf in args.vcfs:
-        gn = load_genotypes(vcf)
-        gnu = ld_prune(
-            gn,
-            size=args.ld_size,
-            step=args.ld_step,
-            threshold=args.ld_threshold,
-            n_iter=args.ld_iter,
-        )
-        gnulist.append(gnu)
-    genotype_data = gnulist[0].concatenate(gnulist[1:])
+        print(f"Processing file {vcf}\n")
+        regions = allel.read_vcf(vcf)["variants/CHROM"]
+        for reg in np.unique(regions):
+            print(f"Reading region {reg}\n")
+            gn = load_genotypes(vcf, reg)
+            if args.subsample is not None:
+                if args.subsample < gn.shape[0]:
+                    vidx = np.random.choice(gn.shape[0], args.subsample, replace=False)
+                    vidx.sort()
+                    gnr = gn.take(vidx, axis=0)
+                    gn = gnr
+            if args.plot_ld:
+                plot_ld(gn, f"{vcf}", n=args.plot_ld_variants, filename=f"{vcf}.ld.png")
+            gnu = ld_prune(
+                gn,
+                size=args.window_size,
+                step=args.window_step,
+                threshold=args.threshold,
+                n_iter=args.iter,
+            )
+            if args.plot_ld:
+                plot_ld(
+                    gnu,
+                    f"{vcf}, pruned",
+                    n=args.plot_ld_variants,
+                    filename=f"{vcf}.ld.pruned.png",
+                )
+            gnulist.append(gnu)
+    if len(gnulist) > 0:
+        genotype_data = gnulist[0].concatenate(gnulist[1:])
+    else:
+        genotype_data = gnulist[0]
     coords, model = allel.pca(
         genotype_data[:], n_components=args.components, scaler=args.scaler
     )
@@ -61,17 +82,12 @@ def ld_prune(gn, size, step, threshold=0.1, n_iter=1):
     return gn
 
 
-def load_genotypes(fn):
-    print(f"Processing file {fn}\n")
-    regions = allel.read_vcf(fn)["variants/CHROM"]
-    for reg in np.unique(regions):
-        print(f"Reading region {reg}\n")
-        callset = allel.read_vcf(fn, region=reg)
-        g = allel.GenotypeChunkedArray(callset["calldata/GT"])
-        ac = g.count_alleles()[:]
-        # nac[reg] = ac
-        flt = (ac.max_allele() == 1) & (ac[:, :2].min(axis=1) > 1)
-        gf = g.compress(flt, axis=0)
-        gn = gf.to_n_alt()
+def load_genotypes(fn, region):
+    callset = allel.read_vcf(fn, region=region)
+    g = allel.GenotypeChunkedArray(callset["calldata/GT"])
+    ac = g.count_alleles()[:]
+    flt = (ac.max_allele() == 1) & (ac[:, :2].min(axis=1) > 1)
+    gf = g.compress(flt, axis=0)
+    gn = gf.to_n_alt()
     print(f"loaded {gn.shape[0]} genotypes")
     return gn
