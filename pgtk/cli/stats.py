@@ -1,19 +1,27 @@
 import argparse
 
+from pgtk.cli.io import add_as_bed_argument
 from pgtk.cli.io import add_input_vcfs_argument
+from pgtk.cli.io import add_output_file_argument
 from pgtk.cli.io import add_output_prefix_argument
+from pgtk.cli.io import add_output_suffix_argument
 from pgtk.cli.log import add_debug_argument
 from pgtk.cli.log import add_threads_argument
+from pgtk.stats.linkage import run_ld_prune
 from pgtk.stats.pca import run_pca
 
 
-def add_pca_arguments(parser):
+def add_backend_argument(parser):
     parser.add_argument(
-        "--no-ld-prune",
-        default=False,
-        help="don't prune variants prior to pca",
-        action="store_true",
+        "--stats-backend",
+        type=str,
+        default="sgkit",
+        choices=["sgkit", "allel"],
+        help=("the statistics backend to use"),
     )
+
+
+def add_ld_prune_arguments(parser):
     parser.add_argument(
         "--window-size",
         type=int,
@@ -32,16 +40,6 @@ def add_pca_arguments(parser):
     )
     parser.add_argument(
         "--n-iter", type=int, default=5, help="number of pruning iterations"
-    )
-    parser.add_argument(
-        "--components", type=int, default=10, help="number of pca components"
-    )
-    parser.add_argument(
-        "--scaler",
-        type=str,
-        default=None,
-        choices=["patterson", "standard", None],
-        help="scaling algorithm",
     )
     parser.add_argument(
         "--plot-ld",
@@ -69,19 +67,43 @@ def add_pca_arguments(parser):
     )
 
 
+def add_pca_arguments(parser):
+    parser.add_argument(
+        "--no-ld-prune",
+        default=False,
+        help="don't prune variants prior to pca",
+        action="store_true",
+    )
+    add_ld_prune_arguments(parser)
+    parser.add_argument(
+        "--components", type=int, default=10, help="number of pca components"
+    )
+    parser.add_argument(
+        "--scaler",
+        type=str,
+        default=None,
+        choices=["patterson", "standard", None],
+        help="scaling algorithm",
+    )
+
+
 def add_stats_subcommand(subparsers):
     parser = subparsers.add_parser("stats", help="stats utilities")
     stats_subparsers = parser.add_subparsers(dest="subcommand.stats")
     stats_subparsers.required = True
 
     # pca parser
-    pca_help = """
-    Calculate pca coordinates.
+    pca_help = """Calculate pca coordinates using either sgkit (default) or
+    scikit-allel backend.
 
-    This example is based on Alistair Miles Fast PCA example
-    (https://alimanfoo.github.io/2015/09/28/fast-pca.html). The output
-    is principal components and a pickled model file with information
-    on loadings and more.
+    The sgkit example is based on
+    https://github.com/pystatgen/sgkit/issues/752. The output consists
+    of a zarr data structure.
+
+    The scikit-allel example is based on Alistair Miles Fast PCA
+    example (https://alimanfoo.github.io/2015/09/28/fast-pca.html).
+    The output is principal components and a pickled model file with
+    information on loadings and more.
 
     """
     pca_parser = stats_subparsers.add_parser(
@@ -89,7 +111,27 @@ def add_stats_subcommand(subparsers):
     )
     add_input_vcfs_argument(pca_parser)
     add_pca_arguments(pca_parser)
+    add_backend_argument(pca_parser)
     add_output_prefix_argument(pca_parser)
     add_threads_argument(pca_parser)
     add_debug_argument(pca_parser)
     pca_parser.set_defaults(runner=run_pca)
+
+    # ld prune parser
+    ld_prune_help = """
+    Prune variants based on LD.
+    """
+    ld_prune_parser = stats_subparsers.add_parser(
+        "ld_prune",
+        help=ld_prune_help,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    add_input_vcfs_argument(ld_prune_parser)
+    add_ld_prune_arguments(ld_prune_parser)
+    add_as_bed_argument(ld_prune_parser)
+    add_backend_argument(ld_prune_parser)
+    add_output_file_argument(ld_prune_parser)
+    add_output_suffix_argument(ld_prune_parser, default=".ld_prune")
+    add_threads_argument(ld_prune_parser)
+    add_debug_argument(ld_prune_parser)
+    ld_prune_parser.set_defaults(runner=run_ld_prune)

@@ -15,6 +15,12 @@ def get_pgtk_parser():
     top_parser.add_argument(
         "-V", "--version", action="version", version=f"%(prog)s {pgtk.__version__}"
     )
+    top_parser.add_argument(
+        "--tmp",
+        type=str,
+        default=None,
+        help="write temporary results to tmp directory",
+    )
 
     subparsers = top_parser.add_subparsers(dest="subcommand")
     subparsers.required = True
