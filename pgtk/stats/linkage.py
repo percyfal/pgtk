@@ -79,14 +79,13 @@ def _ld_prune_sgkit(
         raise
     print("loading dataset...")
     ds = sg.load_dataset(zarrdata)
+    # For rechunking
+    original_chunk_size = ds.chunks["variants"][0]
     ds["dosage"] = ds["call_genotype"].sum(dim="ploidy")
     ds = sg.window_by_variant(ds, size=window_size, step=window_step)
     # Possibly plot before here
 
-    # FIXME: don't know if it is possible to run iterations on sgkit
-    # data array
     print("pruning by ld...")
-    n_iter = 1
     for i in range(n_iter):
         n_start = len(ds.variants)
         ds = sg.ld_prune(ds, threshold=threshold)
@@ -99,11 +98,23 @@ def _ld_prune_sgkit(
         if n_remove == 0:
             print(f"ld pruning has converged after {i+1} iterations; quitting")
             break
+        ds = ds.drop_vars(["window_contig", "window_start", "window_stop"])
+        ds = sg.window_by_variant(ds, size=window_size, step=window_step)
     # Plot after
 
     # Save dataset
     re_zarr = re.compile("(.zarr)$")
     output = re_zarr.sub(f"{output_suffix}.zarr", str(zarrdata))
+    ds.chunk(original_chunk_size)
+
+    try:
+        ds["variant_id"] = ds.variant_id.astype(str)
+        ds["variant_allele"] = ds.variant_allele.astype(str)
+        ds["sample_id"] = ds.sample_id.astype(str)
+        sg.save_dataset(ds, output, mode="w")
+    except Exception as e:
+        print(e)
+        raise
     if as_bed:
         bedout = re_zarr.sub(".bed", output)
         to_bed(ds, bedout)
