@@ -58,6 +58,13 @@ def add_ld_prune_arguments(parser):
         help="subsample raw input to this number of sites",
     )
     parser.add_argument(
+        "--subsample-fraction",
+        "-f",
+        type=float,
+        default=None,
+        help="subsample raw input to this fraction of sites",
+    )
+    parser.add_argument(
         "--exclude",
         "-e",
         type=str,

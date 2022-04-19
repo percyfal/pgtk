@@ -17,6 +17,7 @@ except ImportError:
 def run_ld_prune(args):
     kwargs = dict(
         subsample=args.subsample,
+        subsample_fraction=args.subsample_fraction,
         plot_ld=args.plot_ld,
         plot_ld_variants=args.plot_ld_variants,
         window_size=args.window_size,
@@ -62,6 +63,7 @@ def _ld_prune_sgkit(
     zarrdata,
     *,
     subsample=None,
+    subsample_fraction=None,
     plot_ld=False,
     plot_ld_variants=1000,
     window_size=500,
@@ -79,6 +81,16 @@ def _ld_prune_sgkit(
         raise
     print("loading dataset...")
     ds = sg.load_dataset(zarrdata)
+    n = None
+    if subsample is not None:
+        n = subsample
+    if subsample_fraction is not None:
+        n = min(len(ds.variants), int(len(ds.variants) * subsample_fraction))
+    if n is not None:
+        vidx = sorted(np.random.choice(len(ds.variants), n, replace=False))
+        print(f"subsetting dataset to {n} variants...")
+        ds = ds.isel(variants=sorted(vidx))
+
     # For rechunking
     original_chunk_size = ds.chunks["variants"][0]
     ds["dosage"] = ds["call_genotype"].sum(dim="ploidy")
