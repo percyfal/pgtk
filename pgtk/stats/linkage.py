@@ -105,7 +105,7 @@ def _ld_prune_sgkit(
     # Save dataset
     re_zarr = re.compile("(.zarr)$")
     output = re_zarr.sub(f"{output_suffix}.zarr", str(zarrdata))
-    ds.chunk(original_chunk_size)
+    ds = ds.chunk(original_chunk_size)
 
     try:
         ds["variant_id"] = ds.variant_id.astype(str)
