@@ -5,13 +5,11 @@ import tskit
 
 
 def run_update_table_metadata(args):
-    from pgtk import tsutils
-
     ts = tskit.load(args.tree_sequence)
     key = args.merge_key
     metadata = pd.read_table(args.metadata)
     metadata.set_index([key], inplace=True)
-    tsout = tsutils.update_tablerow_metadata(
+    tsout = update_tablerow_metadata(
         ts, metadata=metadata, tablename=args.table_name, key=key
     )
     tsout.dump(args.outfile)
