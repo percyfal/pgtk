@@ -2,23 +2,14 @@ import argparse
 
 from pgtk.cli.io import add_as_bed_argument
 from pgtk.cli.io import add_input_vcfs_argument
+from pgtk.cli.io import add_input_zarrs_argument
 from pgtk.cli.io import add_output_file_argument
-from pgtk.cli.io import add_output_prefix_argument
 from pgtk.cli.io import add_output_suffix_argument
 from pgtk.cli.log import add_debug_argument
 from pgtk.cli.log import add_threads_argument
+from pgtk.cli.log import add_workers_argument
 from pgtk.stats.linkage import run_ld_prune
 from pgtk.stats.pca import run_pca
-
-
-def add_backend_argument(parser):
-    parser.add_argument(
-        "--stats-backend",
-        type=str,
-        default="sgkit",
-        choices=["sgkit", "allel"],
-        help=("the statistics backend to use"),
-    )
 
 
 def add_ld_prune_arguments(parser):
@@ -76,13 +67,6 @@ def add_ld_prune_arguments(parser):
 
 def add_pca_arguments(parser):
     parser.add_argument(
-        "--no-ld-prune",
-        default=False,
-        help="don't prune variants prior to pca",
-        action="store_true",
-    )
-    add_ld_prune_arguments(parser)
-    parser.add_argument(
         "--components", type=int, default=10, help="number of pca components"
     )
     parser.add_argument(
@@ -92,6 +76,28 @@ def add_pca_arguments(parser):
         choices=["patterson", "standard", None],
         help="scaling algorithm",
     )
+    parser.add_argument(
+        "--subsample",
+        "-s",
+        type=int,
+        default=None,
+        help="subsample raw input to this number of sites",
+    )
+    parser.add_argument(
+        "--subsample-fraction",
+        "-f",
+        type=float,
+        default=None,
+        help="subsample raw input to this fraction of sites",
+    )
+    parser.add_argument(
+        "--exclude",
+        "-e",
+        type=str,
+        nargs="*",
+        default=None,
+        help="list of samples to exclude",
+    )
 
 
 def add_stats_subcommand(subparsers):
@@ -100,27 +106,21 @@ def add_stats_subcommand(subparsers):
     stats_subparsers.required = True
 
     # pca parser
-    pca_help = """Calculate pca coordinates using either sgkit (default) or
-    scikit-allel backend.
+    pca_help = """Calculate pca coordinates using sgkit.
 
-    The sgkit example is based on
+    The example is based on
     https://github.com/pystatgen/sgkit/issues/752. The output consists
     of a zarr data structure.
-
-    The scikit-allel example is based on Alistair Miles Fast PCA
-    example (https://alimanfoo.github.io/2015/09/28/fast-pca.html).
-    The output is principal components and a pickled model file with
-    information on loadings and more.
 
     """
     pca_parser = stats_subparsers.add_parser(
         "pca", help=pca_help, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    add_input_vcfs_argument(pca_parser)
+    add_input_zarrs_argument(pca_parser)
     add_pca_arguments(pca_parser)
-    add_backend_argument(pca_parser)
-    add_output_prefix_argument(pca_parser)
+    add_output_file_argument(pca_parser, default="pca.zarr")
     add_threads_argument(pca_parser)
+    add_workers_argument(pca_parser)
     add_debug_argument(pca_parser)
     pca_parser.set_defaults(runner=run_pca)
 
@@ -133,12 +133,12 @@ def add_stats_subcommand(subparsers):
         help=ld_prune_help,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    add_input_vcfs_argument(ld_prune_parser)
+    add_input_vcfs_argument(ld_prune_parser, single=False)
     add_ld_prune_arguments(ld_prune_parser)
     add_as_bed_argument(ld_prune_parser)
-    add_backend_argument(ld_prune_parser)
     add_output_file_argument(ld_prune_parser)
     add_output_suffix_argument(ld_prune_parser, default=".ld_prune")
     add_threads_argument(ld_prune_parser)
+    add_workers_argument(ld_prune_parser)
     add_debug_argument(ld_prune_parser)
     ld_prune_parser.set_defaults(runner=run_ld_prune)

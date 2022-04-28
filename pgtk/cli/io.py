@@ -43,3 +43,23 @@ def add_as_bed_argument(parser):
     parser.add_argument(
         "--as-bed", help="save output as bed", action="store_true", default=False
     )
+
+
+def add_from_argument(parser, required=True, choices=None, default=None):
+    parser.add_argument(
+        "--from",
+        help="from file format",
+        required=required,
+        choices=None,
+        default=None,
+    )
+
+
+def add_to_argument(parser, required=True, choices=None, default=None):
+    parser.add_argument(
+        "--to",
+        help="to file format",
+        required=required,
+        choices=None,
+        default=None,
+    )
