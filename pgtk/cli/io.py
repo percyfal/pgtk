@@ -1,3 +1,11 @@
+def add_input_file_argument(parser, default=None):
+    parser.add_argument(
+        "inputfile",
+        help=("Input file name"),
+        type=str,
+    )
+
+
 def add_input_vcfs_argument(parser, single=True):
     if single:
         parser.add_argument("vcf", help=("Input vcf file"), type=str)
