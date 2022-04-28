@@ -4,6 +4,7 @@ import sys
 
 import pgtk
 from pgtk.cli import add_fileops_subcommand
+from pgtk.cli import add_plot_subcommand
 from pgtk.cli import add_stats_subcommand
 from pgtk.cli import add_tskit_subcommand
 
@@ -37,6 +38,7 @@ def get_pgtk_parser():
     add_tskit_subcommand(subparsers)
     add_stats_subcommand(subparsers)
     add_fileops_subcommand(subparsers)
+    add_plot_subcommand(subparsers)
 
     return top_parser
 
