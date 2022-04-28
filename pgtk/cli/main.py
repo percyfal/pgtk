@@ -3,6 +3,7 @@ import argparse
 import sys
 
 import pgtk
+from pgtk.cli import add_fileops_subcommand
 from pgtk.cli import add_stats_subcommand
 from pgtk.cli import add_tskit_subcommand
 
@@ -16,10 +17,17 @@ def get_pgtk_parser():
         "-V", "--version", action="version", version=f"%(prog)s {pgtk.__version__}"
     )
     top_parser.add_argument(
-        "--tmp",
+        "--tmpdir",
         type=str,
         default=None,
         help="write temporary results to tmp directory",
+    )
+
+    top_parser.add_argument(
+        "--tmpfile",
+        type=str,
+        default=None,
+        help="write temporary results to tmp file",
     )
 
     subparsers = top_parser.add_subparsers(dest="subcommand")
@@ -28,6 +36,7 @@ def get_pgtk_parser():
     # Add subcommands here
     add_tskit_subcommand(subparsers)
     add_stats_subcommand(subparsers)
+    add_fileops_subcommand(subparsers)
 
     return top_parser
 
