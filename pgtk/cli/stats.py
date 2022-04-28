@@ -12,6 +12,24 @@ from pgtk.stats.linkage import run_ld_prune
 from pgtk.stats.pca import run_pca
 
 
+def add_subsample_arguments(parser):
+    subsample_arg = parser.add_mutually_exclusive_group()
+    subsample_arg.add_argument(
+        "--subsample",
+        "-s",
+        type=int,
+        default=None,
+        help="subsample raw input to this number of sites",
+    )
+    subsample_arg.add_argument(
+        "--subsample-fraction",
+        "-f",
+        type=float,
+        default=None,
+        help="subsample raw input to this fraction of sites",
+    )
+
+
 def add_ld_prune_arguments(parser):
     parser.add_argument(
         "--window-size",
@@ -41,20 +59,7 @@ def add_ld_prune_arguments(parser):
     parser.add_argument(
         "--plot-ld-variants", type=int, default=1000, help="Number of variants to plot"
     )
-    parser.add_argument(
-        "--subsample",
-        "-s",
-        type=int,
-        default=None,
-        help="subsample raw input to this number of sites",
-    )
-    parser.add_argument(
-        "--subsample-fraction",
-        "-f",
-        type=float,
-        default=None,
-        help="subsample raw input to this fraction of sites",
-    )
+    add_subsample_arguments(parser)
     parser.add_argument(
         "--exclude",
         "-e",
@@ -76,20 +81,7 @@ def add_pca_arguments(parser):
         choices=["patterson", "standard", None],
         help="scaling algorithm",
     )
-    parser.add_argument(
-        "--subsample",
-        "-s",
-        type=int,
-        default=None,
-        help="subsample raw input to this number of sites",
-    )
-    parser.add_argument(
-        "--subsample-fraction",
-        "-f",
-        type=float,
-        default=None,
-        help="subsample raw input to this fraction of sites",
-    )
+    add_subsample_arguments(parser)
     parser.add_argument(
         "--exclude",
         "-e",
