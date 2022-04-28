@@ -58,8 +58,8 @@ def add_from_argument(parser, required=True, choices=None, default=None):
         "--from",
         help="from file format",
         required=required,
-        choices=None,
-        default=None,
+        choices=choices,
+        default=default,
     )
 
 
@@ -68,6 +68,10 @@ def add_to_argument(parser, required=True, choices=None, default=None):
         "--to",
         help="to file format",
         required=required,
-        choices=None,
-        default=None,
+        choices=choices,
+        default=default,
     )
+
+
+def add_metadata_argument(parser, mdhelp="Metadata file", default=None):
+    parser.add_argument("--metadata", help=mdhelp, default=default)

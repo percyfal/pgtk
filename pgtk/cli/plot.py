@@ -1,6 +1,7 @@
 import argparse
 
 from pgtk.cli.io import add_input_file_argument
+from pgtk.cli.io import add_metadata_argument
 from pgtk.cli.io import add_output_file_argument
 from pgtk.plotting.pca import run_plot_pca
 
@@ -16,4 +17,5 @@ def add_plot_subcommand(subparsers):
     )
     add_input_file_argument(pca_parser)
     add_output_file_argument(pca_parser)
+    add_metadata_argument(pca_parser)
     pca_parser.set_defaults(runner=run_plot_pca)
