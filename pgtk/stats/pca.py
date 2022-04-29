@@ -4,7 +4,6 @@ from typing import Optional
 
 import numpy as np
 from numcodecs import PackBits
-from pgtk.config import init_dask_client
 from xarray import Dataset
 
 try:
@@ -54,7 +53,6 @@ def encode(ds: Dataset, encoding: Optional[dict] = None):
 
 
 def run_pca(args):
-    init_dask_client(args.threads)
     print(f"Loading dataset {args.zarr}")
     ds = sg.load_dataset(args.zarr)
     original_chunk_size = ds.chunks["variants"][0]

@@ -22,7 +22,7 @@ def run_ld_prune(args):
     )
     init_dask_client(args.threads)
     for vcf in args.vcfs:
-        zarrdata = convert_vcf_to_zarr(vcf, tmpdir=args.tmpdir, mode="w")
+        zarrdata = convert_vcf_to_zarr(vcf, tmpdir=args.tmpdir)
         _ld_prune(zarrdata, **kwargs)
 
 
