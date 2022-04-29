@@ -3,7 +3,9 @@ import argparse
 from pgtk.cli.io import add_input_vcfs_argument
 from pgtk.cli.io import add_input_zarrs_argument
 from pgtk.cli.io import add_output_file_argument
+from pgtk.cli.io import add_to_argument
 from pgtk.fileops.concat import run_concat
+from pgtk.fileops.convert import run_convert
 
 
 def add_fileops_subcommand(subparsers):
@@ -30,6 +32,9 @@ def add_fileops_subcommand(subparsers):
         help=convert_help,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    add_input_vcfs_argument(vcf_parser_convert_parser)
+    add_to_argument(vcf_parser_convert_parser, choices=["zarr"], default="zarr")
+    vcf_parser_convert_parser.set_defaults(runner=run_convert)
 
     zarr_parser_concat_parser = zarr_parser_subparsers.add_parser(
         "concat",
@@ -40,5 +45,3 @@ def add_fileops_subcommand(subparsers):
     add_output_file_argument(zarr_parser_concat_parser, default="concat.zarr")
     zarr_parser_concat_parser.filetype = "zarr"
     zarr_parser_concat_parser.set_defaults(runner=run_concat)
-
-    add_input_vcfs_argument(vcf_parser_convert_parser)
