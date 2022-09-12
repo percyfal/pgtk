@@ -56,7 +56,7 @@ def bokeh_plot_pca_coords(df, explained, *, pc1=1, pc2=2, **kw):
     return p
 
 
-def bokeh_plot_pca(df, eigenvals, ncomp=5, filename=None, **kw):
+def bokeh_plot_pca(df, eigenvals, ncomp=6, filename=None, **kw):
     pairs = list(itertools.combinations(range(ncomp), 2))
     n = len(pairs)
     ncols = math.floor(math.sqrt(n))
