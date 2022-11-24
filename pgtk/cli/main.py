@@ -7,6 +7,9 @@ from pgtk.cli import add_fileops_subcommand
 from pgtk.cli import add_plot_subcommand
 from pgtk.cli import add_stats_subcommand
 from pgtk.cli import add_tskit_subcommand
+from pgtk.cli.log import add_debug_argument
+from pgtk.cli.log import add_threads_argument
+from pgtk.cli.log import add_workers_argument
 
 
 def get_pgtk_parser():
@@ -30,6 +33,9 @@ def get_pgtk_parser():
         default=None,
         help="write temporary results to tmp file",
     )
+    add_debug_argument(top_parser)
+    add_threads_argument(top_parser)
+    add_workers_argument(top_parser)
 
     subparsers = top_parser.add_subparsers(dest="subcommand")
     subparsers.required = True

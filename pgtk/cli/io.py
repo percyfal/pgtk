@@ -75,3 +75,7 @@ def add_to_argument(parser, required=True, choices=None, default=None):
 
 def add_metadata_argument(parser, mdhelp="Metadata file", default=None):
     parser.add_argument("--metadata", help=mdhelp, default=default)
+
+
+def add_bokeh_theme_argument(parser, default=None):
+    parser.add_argument("--bokeh-theme", help="bokeh theme file")

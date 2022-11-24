@@ -4,12 +4,15 @@ import re
 
 import pandas as pd
 import sgkit as sg
+from bokeh.io import curdoc
+from bokeh.io import export_png
 from bokeh.io import output_file
 from bokeh.io import show
 from bokeh.layouts import gridplot
 from bokeh.models import ColumnDataSource
 from bokeh.palettes import Set3
 from bokeh.plotting import figure
+from bokeh.themes import Theme
 
 
 def _get_palette(cmap=Set3[12], n=12, start=0, end=1):
@@ -26,7 +29,7 @@ def _get_palette(cmap=Set3[12], n=12, start=0, end=1):
 # NB: https://speciationgenomics.github.io/pca/ calculates explained
 # variance from sums of plink eigenvals, although not all components
 # have been calculated
-def bokeh_plot_pca_coords(df, explained, *, pc1=1, pc2=2, **kw):
+def bokeh_plot_pca_coords(df, explained, *, pc1=1, pc2=2, legend=True, **kw):
     source = ColumnDataSource(df)
     x = explained[pc1 - 1]
     y = explained[pc2 - 1]
@@ -42,31 +45,49 @@ def bokeh_plot_pca_coords(df, explained, *, pc1=1, pc2=2, **kw):
         title=f"PC{pc1} vs PC{pc2}",
         **kw,
     )
+    kw = {}
+    if legend:
+        kw.update(**{"legend_group": "population"})
     p.circle(
         x=f"PC{pc1}",
         y=f"PC{pc2}",
         source=source,
         color="color",
-        size=15,
         alpha=0.8,
         line_color="black",
-        legend_group="population",
+        **kw,
     )
-    p.add_layout(p.legend[0], "right")
+    if legend:
+        p.add_layout(p.legend[0], "right")
     return p
 
 
-def bokeh_plot_pca(df, eigenvals, ncomp=6, filename=None, **kw):
+def bokeh_plot_pca(
+    df, eigenvals, ncomp=6, filename=None, png=False, legend=True, ncols=None, **kw
+):
     pairs = list(itertools.combinations(range(ncomp), 2))
     n = len(pairs)
-    ncols = math.floor(math.sqrt(n))
+    if ncols is None:
+        ncols = math.floor(math.sqrt(n))
     plots = []
     for (i, j) in pairs:
-        p = bokeh_plot_pca_coords(df, eigenvals, pc1=i + 1, pc2=j + 1, **kw)
+        p = bokeh_plot_pca_coords(
+            df, eigenvals, pc1=i + 1, pc2=j + 1, legend=legend, **kw
+        )
         plots.append(p)
+        # if png:
+        #     if filename:
+        #         pngout = f"{filename}.PC{i+1}-PC{j+1}.png"
+        #     else:
+        #         pngout = f"PC{i+1}-PC{j+1}.png"
+        #     export_png(p, filename=pngout)
+    plots.append
     gp = gridplot(plots, ncols=ncols)
+
     if filename is not None:
         output_file(filename)
+        if png:
+            export_png(gp, filename=f"{filename}.png")
         show(gp)
     else:
         return gp
@@ -121,4 +142,14 @@ def run_plot_pca(args):
     groups = sorted(list(set(df["population"])))
     color = {x: y for x, y in zip(groups, _get_palette(n=len(groups)))}
     df["color"] = [color[x] for x in df["population"]]
-    bokeh_plot_pca(df, explained, filename=args.output_file)
+    if args.bokeh_theme is not None:
+        curdoc().theme = Theme(filename=args.bokeh_theme)
+    bokeh_plot_pca(
+        df,
+        explained,
+        filename=args.output_file,
+        png=args.png,
+        legend=(not args.no_legend),
+        ncomp=args.ncomp,
+        ncols=args.ncols,
+    )
