@@ -6,6 +6,7 @@ tqdm
 humanize
 daiquiri
 setuptools_scm
+matplotlib
 msprime >= 1.0.0
 
 pytest

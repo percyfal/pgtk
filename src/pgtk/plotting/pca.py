@@ -68,7 +68,10 @@ def bokeh_plot_pca(
     pairs = list(itertools.combinations(range(ncomp), 2))
     n = len(pairs)
     if ncols is None:
-        ncols = math.floor(math.sqrt(n))
+        if n <= 3:
+            ncols = 2
+        else:
+            ncols = math.floor(math.sqrt(n))
     plots = []
     for (i, j) in pairs:
         p = bokeh_plot_pca_coords(

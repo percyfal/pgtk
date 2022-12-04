@@ -6,23 +6,10 @@ from pgtk.io.dataset import to_bed
 from pgtk.io.vcf import convert_vcf_to_zarr
 
 
-def run_ld_prune(args):
-    kwargs = dict(
-        subsample=args.subsample,
-        subsample_fraction=args.subsample_fraction,
-        plot_ld=args.plot_ld,
-        plot_ld_variants=args.plot_ld_variants,
-        window_size=args.window_size,
-        window_step=args.window_step,
-        threshold=args.threshold,
-        n_iter=args.n_iter,
-        exclude=args.exclude,
-        output_suffix=args.output_suffix,
-        as_bed=args.as_bed,
-    )
-    init_dask_client(args.threads)
-    for vcf in args.vcfs:
-        zarrdata = convert_vcf_to_zarr(vcf, tmpdir=args.tmpdir)
+def run_ld_prune(vcf, threads=1, workers=1, **kwargs):
+    init_dask_client(threads)
+    for v in vcf:
+        zarrdata = convert_vcf_to_zarr(v, tmpdir=kwargs["tmpdir"])
         _ld_prune(zarrdata, **kwargs)
 
 
@@ -40,6 +27,7 @@ def _ld_prune(
     exclude=None,
     output_suffix=None,
     as_bed=False,
+    **kwargs,
 ):
     try:
         import sgkit as sg
