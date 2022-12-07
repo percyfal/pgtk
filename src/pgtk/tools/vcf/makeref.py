@@ -1,10 +1,6 @@
-"""Polarize vcf with respect to a haplotype in VCF file.
+"""Generate reference sequence from REF allele in VCF
 
-Use a haplotype from a reference individual (sample) in VCF as
-reference and polarize all other entries with respect to haplotype.
-Outputs repolarized vcf, potentially excluding the reference
-individual.
-
+Use the REF allele in VCF to generate reference sequence.
 """
 import logging
 import re
@@ -81,25 +77,17 @@ class SeqRecord:
 
 @click.command(help=__doc__)
 @click.argument("vcf", type=click.Path(exists=True))
-@click.argument("output-file", type=click.File("w"))
 @click.option(
-    "--haplotype",
-    help="haplotype to use",
-    type=click.IntRange(
-        1,
-    ),
-    default=1,
+    "--fasta-ref",
+    "-f",
+    help="reference sequence in fasta format",
+    type=click.Path(exists=True),
 )
 @click.option(
     "--reference-id",
-    help="reference id to use for polarization. Defaults to first individual.",
-    type=str,
-    default=None,
+    help="sample id to use for polarization. Defaults to first individual",
 )
-@click.option(
-    "--reference", help="reference fasta sequence", type=click.Path(exists=True)
-)
-@click.option("--contig-id", help="contig identifier", type=str, default="1")
+@click.option("--output-file", "-o", type=click.Path())
 @click.option("--description", help="contig description", type=str, default=None)
 @pass_environment
 @click.pass_context
@@ -107,28 +95,35 @@ def main(
     ctx,
     env,
     vcf,
-    output_file,
-    haplotype,
     reference_id,
-    reference,
-    contig_id,
+    fasta_ref,
+    output_file,
     description,
 ):
     vcf_fh = cyvcf2.VCF(vcf)
     sequence_length = vcf_fh.seqlens[0]
     if reference_id is None:
         reference_id = vcf_fh.samples[0]
-    if reference is not None:
-        with open(reference) as fh:
+    if fasta_ref is not None:
+        with open(fasta_ref) as fh:
             sid, desc = re.split(r"\s+", fh.readline().lstrip(">"), maxsplit=1)
             data = "".join([line.strip() for line in fh.readlines()])
             ref = SeqRecord(id=sid, desc=desc, seq=Sequence(data))
     else:
         dna = ["A", "C", "G", "T"]
         seq = choices(dna, k=int(sequence_length))
-        ref = SeqRecord(id=contig_id, desc=description, seq=Sequence("".join(seq)))
+        ref = SeqRecord(id=1, desc=description, seq=Sequence("".join(seq)))
 
     if len(ref) != sequence_length:
         raise ValueError("reference must be same length as vcf sequence")
 
-    print(dir(vcf_fh))
+    for gt in vcf_fh:
+        ref.seq[gt.POS - 1] = gt.REF
+        if ref.id != gt.CHROM:
+            ref.id = gt.CHROM
+    if output_file is not None:
+        with open(output_file, "w") as fh:
+            fh.write(str(ref))
+            fh.write("\n")
+    else:
+        print(ref)

@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 @click.argument("output-file", type=click.Path())
 @click.option(
     "--haplotype",
-    help="haplotype to use",
+    "-H",
+    help="choose which allele to use from FORMAT/GT field",
     type=click.IntRange(
         1,
     ),

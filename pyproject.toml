@@ -65,6 +65,7 @@ pgtk = "pgtk.cli:cli"
 pgtk-wf = "pgtk.wfcli:cli"
 pgtk-vcf-polarize = "pgtk.tools.vcf.polarize:main"
 pgtk-convert = "pgtk.tools.convert:main"
+pgtk-vcf-makeref = "pgtk.tools.vcf.makeref:main"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
