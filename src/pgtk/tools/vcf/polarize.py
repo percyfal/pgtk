@@ -52,12 +52,15 @@ def main(env, ctx, vcf, output_file, haplotype, reference_id):
     for gt, variant in zip(vcf_ref, vcf_fh):
         ref = gt.genotypes[0][0]
         if ref != 0:
-            # Swap states 0 - ref; also requires rewriting variant.REF and variant.ALT
+            d = dict(enumerate(range(len(gt.ALT) + len(gt.REF))))
+            # Map 0:ref and ref:0
+            d[0] = ref
+            d[ref] = 0
             for i in range(len(variant.genotypes)):
                 alleles = variant.genotypes[i]
                 variant.genotypes[i] = [
-                    ref - alleles[0],
-                    ref - alleles[1],
+                    d[alleles[0]],
+                    d[alleles[1]],
                     alleles[2],
                 ]
             variant.genotypes = variant.genotypes

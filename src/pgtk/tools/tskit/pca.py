@@ -82,7 +82,7 @@ def validate_samples_individuals(ctx, param, value):
 @threads
 @workers
 @click.option("--contig-id", type=str, default="1")
-@click.option("--output-file", type=click.Path(), default="bokeh.html")
+@click.option("--output-file", "-o", type=click.Path(), default="bokeh.html")
 @click.option("--png", help="Make png plots for each pc combination", is_flag=True)
 @click.option("--ncols", help="Number of columns in gridplot", default=None, type=int)
 @click.option("--no-legend", help="Don't draw legend", is_flag=True)

@@ -45,3 +45,10 @@ def test_polarize(runner, cd_tmp_path):
     assert data[3][9] == "0|0"
     assert data[3][10] == "0|0"
     assert data[3][11] == "0|0"
+
+    # Fifth case
+    assert data[4][3] == "T"
+    assert data[4][4] == "A,G,C"
+    assert data[4][9] == "0|1"
+    assert data[4][10] == "2|0"
+    assert data[4][11] == "3|1"
