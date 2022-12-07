@@ -6,3 +6,14 @@ stdpopsim HomSap -d OutOfAfrica_3G09 -c chr22  -o ooa.chr22.ts -l 0.1 -s 42 10 1
 tskit vcf --ploidy 2 ooa.chr22.ts | sed -e "s/contig=<ID=1/contig=<ID=chr22/g" | sed -e "s/^1/chr22/g" | sed -e "s/tsk_0\t//g" | sed -e "s/tsk_14/tsk_14\ttsk_15/g" | bcftools view -O z -o ooa.chr22.vcf.gz
 tabix ooa.chr21.vcf.gz
 tabix ooa.chr22.vcf.gz
+
+# Alternative
+msp ancestry -s 24 --demography ooa_with_outgroups.demes.yaml --length 2e6 --recombination-rate 1.44e-08 YRI:3 CHB:3 CEU:4 gorilla:1 orangutan:1 chimpanzee:1 > ooa.ts
+msp mutations -s 42 2.35e-08 ooa.ts -o ooa.chr21.ts
+tskit vcf --contig-id chr21 ooa.chr21.ts | bcftools view -O z -o ooa.chr21.vcf.gz
+msp ancestry -s 113 --demography ooa_with_outgroups.demes.yaml --length 2e6 --recombination-rate 1.44e-08 YRI:3 CHB:3 CEU:4 gorilla:1 orangutan:1 chimpanzee:1 > ooa.ts
+msp mutations -s 112 2.35e-08 ooa.ts -o ooa.chr22.ts
+tskit vcf --contig-id chr22 ooa.chr22.ts | bcftools view -O z -o ooa.chr22.vcf.gz
+tabix ooa.chr21.vcf.gz
+tabix ooa.chr22.vcf.gz
+rm -f ooa.ts

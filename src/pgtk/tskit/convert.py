@@ -6,14 +6,34 @@ from sgkit.typing import ArrayLike
 
 
 # See sgkit.tests.test_popgen
-def ts_to_sgkit_dataset(ts, contig_id="1", chunks=None, samples=None, ploidy=2):
+def ts_to_sgkit_dataset(
+    ts,
+    contig_id="1",
+    chunks=None,
+    ploidy=2,
+    samples=None,
+    individuals=None,
+    populations=None,
+):
     """Convert tskit tree sequence into an sgkit dataset.
 
     Based on sgkit.tests.test_popgen.ts_to_dataset
     """
     if samples is None:
         samples = ts.samples()
-    nind = int(len(samples) / 2)
+    if populations is not None:
+        popind = [
+            pop.id
+            for pop in ts.populations()
+            if pop.metadata.get("name", None) in populations
+        ]
+        individuals = [
+            i for i, ind in enumerate(ts.individual_populations) if ind in popind
+        ]
+        samples = [n for i in individuals for n in ts.individual(i).nodes]
+    if individuals is None:
+        individuals = list(set(ts.nodes_individual[samples]))
+    nind = len(individuals)
     tables = ts.dump_tables()
     alleles = []
     genotypes = []
@@ -32,14 +52,14 @@ def ts_to_sgkit_dataset(ts, contig_id="1", chunks=None, samples=None, ploidy=2):
     genotypes = np.reshape(genotypes, (len(genotypes), nind, ploidy))
 
     ds = create_genotype_call_dataset(
-        variant_contig_names=["1"],
+        variant_contig_names=[contig_id],
         variant_contig=np.zeros(len(tables.sites), dtype=int),
         variant_position=tables.sites.position.astype(int),
         variant_allele=alleles,
-        sample_id=np.array([f"tsk_{u}" for u in np.arange(nind)]).astype("U"),
+        sample_id=np.array([f"tsk_{u}" for u in individuals]).astype("U"),
         call_genotype=genotypes,
     )
-    ds["sample_cohort"] = ts.individuals_population
+    ds["sample_cohort"] = ts.individuals_population[individuals]
     ds = ds.assign(
         {
             "cohorts": [
@@ -48,7 +68,6 @@ def ts_to_sgkit_dataset(ts, contig_id="1", chunks=None, samples=None, ploidy=2):
             ]
         }
     )
-
     if chunks is not None:
         ds = ds.chunk(dict(zip(["variants", "samples"], chunks)))
     return ds

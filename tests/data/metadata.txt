@@ -1,0 +1,14 @@
+sample	population
+tsk_0	YRI
+tsk_1	YRI
+tsk_2	YRI
+tsk_3	CHB
+tsk_4	CHB
+tsk_5	CHB
+tsk_6	CEU
+tsk_7	CEU
+tsk_8	CEU
+tsk_9	CEU
+tsk_10	gorilla
+tsk_11	orangutan
+tsk_12	chimpanzee

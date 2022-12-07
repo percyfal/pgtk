@@ -1,25 +1,26 @@
-"""Make pca from tree sequence file
+"""Make pca from vcf
 
-Make pca plot from tree sequence file (TSFILE). By default, samples
-are colored according to population obtained from tree sequence
-metadata. If none is available, no coloring is added.
+Make pca plot from vcf (VCF).
 
 """
 import logging
+import os
+import re
+import sys
 
 import click
-import tskit
+import cyvcf2
+import pandas as pd
+import sgkit as sg
 from bokeh.io.doc import curdoc
 from bokeh.themes import Theme
-from pgtk.arguments import tsfile
 from pgtk.cli import pass_environment
 from pgtk.options import threads
 from pgtk.options import workers
 from pgtk.plotting.pca import _get_palette
 from pgtk.plotting.pca import bokeh_plot_pca
 from pgtk.stats.pca import pca
-from pgtk.tskit.convert import ts_to_sgkit_dataset
-
+from sgkit.io.vcf import vcf_to_zarr
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ def validate_populations(ctx, param, value):
     return value.split(",")
 
 
-def validate_samples_individuals(ctx, param, value):
+def validate_samples(ctx, param, value):
     if value is None:
         return
     data = []
@@ -54,7 +55,8 @@ def validate_samples_individuals(ctx, param, value):
 
 
 @click.command(help=__doc__)
-@tsfile
+@click.argument("vcf", type=click.Path(exists=True))
+@click.argument("metadata", type=click.Path(exists=True))
 @click.option("--components", type=int, default=3, help="number of pca components")
 @click.option(
     "--scaler",
@@ -82,7 +84,7 @@ def validate_samples_individuals(ctx, param, value):
 @threads
 @workers
 @click.option("--contig-id", type=str, default="1")
-@click.option("--output-file", type=click.Path(), default="bokeh.html")
+@click.option("--output-file", "-o", type=click.Path(), default="bokeh.html")
 @click.option("--png", help="Make png plots for each pc combination", is_flag=True)
 @click.option("--ncols", help="Number of columns in gridplot", default=None, type=int)
 @click.option("--no-legend", help="Don't draw legend", is_flag=True)
@@ -96,26 +98,11 @@ def validate_samples_individuals(ctx, param, value):
     default=2,
 )
 @click.option(
-    "--tsploidy",
-    help="sample output ploidy",
-    type=click.IntRange(
-        1,
-    ),
-    default=2,
-)
-@click.option(
     "--samples",
     type=click.UNPROCESSED,
-    callback=validate_samples_individuals,
+    callback=validate_samples,
     default=None,
-    help="subset to samples",
-)
-@click.option(
-    "--individuals",
-    type=click.UNPROCESSED,
-    callback=validate_samples_individuals,
-    default=None,
-    help="subset to individuals",
+    help="subset to samples. NB: in vcf files samples and individuals are assumed equal",
 )
 @click.option(
     "--populations",
@@ -124,10 +111,16 @@ def validate_samples_individuals(ctx, param, value):
     default=None,
     help="subset to populations",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    help="force regeneration of zarr output",
+)
 @pass_environment
 def main(
     env,
-    tsfile,
+    vcf,
+    metadata,
     contig_id,
     output_file,
     png,
@@ -135,26 +128,43 @@ def main(
     no_legend,
     bokeh_theme_file,
     ploidy,
-    tsploidy,
     samples,
-    individuals,
     populations,
+    force,
     **kwargs,
 ):
-    ts = tskit.load(tsfile)
-    if (len(ts.samples()) % 2) != 0:
-        logger.warning(
-            "assuming diploids; uneven number of samples"
-            " (chromosomes) in tree sequence file"
+    md = pd.read_table(metadata)
+    if md.columns.values.tolist() != ["sample", "population"]:
+        logger.error(
+            "metadata table must consist of two columns with "
+            "headings 'sample' and 'population'"
         )
-    ds = ts_to_sgkit_dataset(
-        ts,
-        contig_id,
-        ploidy=ploidy,
-        samples=samples,
-        individuals=individuals,
-        populations=populations,
-    )
+        sys.exit()
+    md.set_index("sample", inplace=True)
+
+    vcffh = cyvcf2.VCF(vcf)
+    if samples is None:
+        samples = vcffh.samples
+    if populations is None:
+        populations = md["population"].values.tolist()
+
+    md = md.loc[
+        samples,
+    ][md["population"].isin(populations)]
+    samples = md.index.values
+    popid = dict(map(reversed, dict(enumerate(md.population.unique())).items()))
+    md["popid"] = md.population.map(popid)
+    zarr = re.sub(".vcf.gz|.vcf|.bcf", ".zarr", vcf)
+    if not os.path.exists(zarr) or force:
+        logger.info(f"Converting from {vcf} to {zarr}")
+        vcf_to_zarr(vcf, zarr)
+    ds = sg.load_dataset(zarr)
+    if len(samples) != len(ds.samples):
+        ds = ds.sel(samples=ds.sample_id.isin(samples.tolist()))
+
+    ids = ds.sample_id.values.tolist()
+    ds["sample_cohort"] = md.loc[ids, "popid"].values.flatten().tolist()
+    ds = ds.assign({"cohorts": list(popid.keys())})
     ds = pca(ds, **kwargs)
 
     explained = ds.sample_pca_explained_variance_ratio.values * 100
@@ -167,10 +177,7 @@ def main(
     df.columns = [f"PC{i+1}" for _, i in df.columns]
     df.reset_index(inplace=True)
     df["sample"] = ds.sample_id[df["sample"].values].values
-    if tsploidy != ploidy:
-        df["population"] = [ds.cohorts.data[i] for i in ds.sample_cohort[::ploidy]]
-    else:
-        df["population"] = [ds.cohorts.data[i] for i in ds.sample_cohort]
+    df["population"] = [ds.cohorts.data[i] for i in ds.sample_cohort]
     groups = sorted(list(set(df["population"])))
     color = {x: y for x, y in zip(groups, _get_palette(n=len(groups)))}
     df["color"] = [color[x] for x in df["population"]]

@@ -175,9 +175,6 @@ def pca(
     "--output-suffix", help="Output file suffix", default=".ld_prune", type=str
 )
 @pass_environment
-# def ld_prune(env, vcf, window_size, window_step, threshold, n_iter,
-#              plot_ld, plot_ld_variants, subsample, subsample_fraction, exclude,
-#              threads, workers, as_bed, output_file, output_suffix):
 def ld_prune(env, vcf, threads, workers, **kwargs):
     """Prune variants based on LD."""
     run_ld_prune(vcf, threads, workers, **kwargs)
