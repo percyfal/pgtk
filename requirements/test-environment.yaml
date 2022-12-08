@@ -3,6 +3,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  - click
+  - cyvcf2
   - msprime
   - tskit
   - bokeh

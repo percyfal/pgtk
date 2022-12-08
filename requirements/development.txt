@@ -1,12 +1,11 @@
 codecov
 coverage
 flake8
-numpy
 tqdm
 humanize
-daiquiri
 setuptools_scm
-msprime >= 1.0.0
+matplotlib
+tox
 
 pytest
 pytest-xdist
