@@ -12,10 +12,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: cache-conda
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           CACHE_NUMBER: 0
         with:
