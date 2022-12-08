@@ -33,6 +33,7 @@ jobs:
         run: |
           conda install -y -c conda-forge mamba
           mamba env update -f requirements/environment.yaml
+          python -m pip install pytest pytest-xdist pytest-coverage
 
       - name: run tests
         shell: bash -l {0}

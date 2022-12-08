@@ -1,15 +1,24 @@
+import logging
 import re
+import tempfile
 
 import numpy as np
-from pgtk.config import init_dask_client
 from pgtk.io.dataset import to_bed
 from pgtk.io.vcf import convert_vcf_to_zarr
 
+# from pgtk.config import init_dask_client
+
+logger = logging.getLogger(__name__)
+
 
 def run_ld_prune(vcf, threads=1, workers=1, **kwargs):
-    init_dask_client(threads)
+    # FIXME: causes downstream process to fail
+    # init_dask_client(threads)
+    tmpdir = kwargs["tmpdir"]
+    if tmpdir is None:
+        tmpdir = tempfile.TemporaryDirectory()
     for v in vcf:
-        zarrdata = convert_vcf_to_zarr(v, tmpdir=kwargs["tmpdir"])
+        zarrdata = convert_vcf_to_zarr(v, tmpdir=tmpdir)
         _ld_prune(zarrdata, **kwargs)
 
 
@@ -33,7 +42,7 @@ def _ld_prune(
         import sgkit as sg
     except ImportError:
         raise
-    print("loading dataset...")
+    logger.info(f"loading dataset {zarrdata}...")
     ds = sg.load_dataset(zarrdata)
     n = None
     if subsample is not None:
@@ -48,7 +57,11 @@ def _ld_prune(
     # For rechunking
     original_chunk_size = ds.chunks["variants"][0]
     ds["dosage"] = ds["call_genotype"].sum(dim="ploidy")
-    ds = sg.window_by_variant(ds, size=window_size, step=window_step)
+    try:
+        ds = sg.window_by_variant(ds, size=window_size, step=window_step)
+    except Exception as e:
+        print(e)
+        raise
     # Possibly plot before here
 
     print("pruning by ld...")

@@ -96,19 +96,19 @@ def bokeh_plot_pca(
         return gp
 
 
-def run_plot_pca(args):
-    if args.inputfile.endswith("eigenvec"):
+def run_plot_pca(input_file, metadata, components, output_file, bokeh_theme, **kwargs):
+    if input_file.endswith("eigenvec"):
         header = 0
         sep = " "
         colnames = ["FID", "IID"]
         # Check header
-        with open(args.inputfile) as fh:
+        with open(input_file) as fh:
             line = fh.readline()
             if not line.startswith("FID"):
                 header = None
             if len(line.split(sep)) == 1:
                 sep = "\t"
-        df = pd.read_table(args.inputfile, header=header, sep=sep)
+        df = pd.read_table(input_file, header=header, sep=sep)
         if header is None:
             colnames += [f"PC{i+1}" for i in range(df.shape[1] - 2)]
             df.columns = colnames
@@ -116,12 +116,12 @@ def run_plot_pca(args):
         df.index.names = ["sample"]
         df = df.drop(["IID"], axis=1)
         df.reset_index(inplace=True)
-        eigenval_file = args.inputfile.replace("eigenvec", "eigenval")
+        eigenval_file = input_file.replace("eigenvec", "eigenval")
         eigenvals = pd.read_table(eigenval_file, header=None)
         explained = eigenvals[0].values / sum(eigenvals[0].values) * 100
-    elif args.inputfile.endswith("zarr"):
+    elif input_file.endswith("zarr"):
         # Assume from sgkit
-        ds = sg.load_dataset(args.inputfile)
+        ds = sg.load_dataset(input_file)
         explained = ds.sample_pca_explained_variance_ratio.values * 100
         df = (
             ds.sample_pca_projection.to_dataframe()
@@ -133,9 +133,9 @@ def run_plot_pca(args):
         df.reset_index(inplace=True)
         df["sample"] = ds.sample_id[df["sample"].values].values
     else:
-        raise (Exception(f"No support for file type {args.inputfile}"))
-    if args.metadata is not None:
-        md = pd.read_table(args.metadata)
+        raise (Exception(f"No support for file type {input_file}"))
+    if metadata is not None:
+        md = pd.read_table(metadata)
         try:
             df = df.merge(md, on="sample")
         except Exception as e:
@@ -145,14 +145,14 @@ def run_plot_pca(args):
     groups = sorted(list(set(df["population"])))
     color = {x: y for x, y in zip(groups, _get_palette(n=len(groups)))}
     df["color"] = [color[x] for x in df["population"]]
-    if args.bokeh_theme is not None:
-        curdoc().theme = Theme(filename=args.bokeh_theme)
+    if bokeh_theme is not None:
+        curdoc().theme = Theme(filename=bokeh_theme)
     bokeh_plot_pca(
         df,
         explained,
-        filename=args.output_file,
-        png=args.png,
-        legend=(not args.no_legend),
-        ncomp=args.ncomp,
-        ncols=args.ncols,
+        filename=output_file,
+        png=kwargs["png"],
+        legend=(not kwargs["no_legend"]),
+        ncomp=components,
+        ncols=kwargs["ncols"],
     )

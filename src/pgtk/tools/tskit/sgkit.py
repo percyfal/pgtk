@@ -14,5 +14,5 @@ logger = logging.getLogger(__name__)
 @click.argument("tree_sequence", type=click.Path())
 @click.option("--output-file", type=click.Path())
 @pass_environment
-def cli(env, infile, outfile):
+def main(env, infile, outfile):
     pass

@@ -13,5 +13,4 @@ def init_dask_client(threads=1, workers=1, threads_per_worker=None):
         )
     except Exception:
         raise
-    print(client)
     return client

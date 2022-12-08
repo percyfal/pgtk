@@ -22,3 +22,7 @@ workers = click.option(
         1,
     ),
 )
+
+tmpdir = click.option(
+    "--tmpdir", help="temporary directory to write to", default=None, type=click.Path()
+)
